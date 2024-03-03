@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o errtrace
+set -o pipefail
+#set -o nounset
+
+# Uncomment to debug
+# set -xo functrace
+
+# Usage function to show info about the app
+function usage() {
+    cat <<EOF
+    
+Simple script to process multiple certificates in one file.
+Wrapper around openssl command. 
+
+Run:
+# cat certs.pem | ${BASH_SOURCE[0]} [options] 
+
+By default the command without options will show full human
+readable format of the cert, like the openssl below.
+# openssl x509 -noout -text
+
+Options:
+--help|-h               - Show the help/usage
+--dates|-dates          - Show dates
+--subject|-subject      - Show subject name
+--issuer|-issuer        - Show the issuer
+--san|-san              - Show the SAN section
+--showcert|-showcert    - Show the certificate (inverse to -noout)
+
+Examples:
+# cat *.crt | ${BASH_SOURCE[0]}
+
+# cat *.crt | ${BASH_SOURCE[0]} --dates --subject --issuer
+EOF
+}
+
+function checkssl() {
+    if ! type openssl>/dev/null; then
+        echo "ERROR: OpenSSL not found. Please install OpenSSL on your machine."
+        exit 1
+    fi
+
+    # In some cases we can check the version of the openssl
+    if [ $(openssl version -v | grep -o -e "[0-9]\.[0-9]\.[0-9]"| grep -o -e "^[0-9]" | uniq) -lt "3" ]; then
+        echo "ERROR: OpenSSL version 3 or higher is needed."
+        exit 1
+    fi
+}
+
+# Check if the data are coming from STDIN
+function check_from_stdin() {
+    if test -t 0; then
+        echo "ERROR: Use 'cat' and |."
+        exit 1
+    fi
+}
+
+# Function call
+checkssl
+
+# Function call
+check_from_stdin
+
+options=" -noout" 
+
+if [[ "${1}" == "" ]]; then
+    options=" -noout -text"
+fi
+
+while [[ "${1}" = -?* ]]; do
+    key="${1}"
+    case ${key} in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --dates|-dates)
+            options+=" -dates"
+            ;;
+        --subject|-subject)
+            options+=" -subject"
+            ;;
+        --issuer|-issuer)
+            options+=" -issuer"
+            ;;
+        --san|-san)
+            # Needs rework as some of the version of the OpenSSL doesn't allow -ext.
+            # .. | grep -A1 "Subject Alternative Name" | grep DNS
+            options+=" -ext subjectAltName"
+            ;;
+        --showcert|-showcert)
+            options=" -text"
+            ;;
+    esac
+    shift
+done
+
+# create an array to read one line at the time
+lines=()
+
+# just a helper variable to set 0 or 1 to only list lines between the cert
+# omit the comments and empty lines
+helper=0
+
+# variable to contain each cert in format to be passed to the openssl
+one_cert=""
+
+# while loop to read through all the lines
+# the IFS is field separator set to end of the line
+while IFS=$'\n' read -r line; do
+
+  if [[ $helper == "1" ]]; then
+    lines+=( "${line}" )
+  fi
+
+  if [[ $line == "-----BEGIN CERTIFICATE-----" ]]; then
+    lines+=( "${line}" )
+    helper=1
+    continue
+  fi
+
+  if [[ $line == "-----END CERTIFICATE-----" ]]; then
+    helper=0
+    	  
+    for each in "${lines[@]}"; do
+      one_cert+="${each}\n"
+    done
+    
+    echo -e ${one_cert} | openssl x509 ${options}
+
+    lines=()
+    one_cert=""
+    
+    continue
+  fi
+done
