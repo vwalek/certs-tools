@@ -112,6 +112,8 @@ one_cert=""
 # the IFS is field separator set to end of the line
 while IFS=$'\n' read -r line; do
 
+  line=$(echo ${line} | sed 's/^[[:space:]]*//')
+
   if [[ $helper == "1" ]]; then
     lines+=( "${line}" )
   fi
