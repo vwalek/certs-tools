@@ -43,7 +43,7 @@ function checkssl() {
         exit 1
     fi
 
-    # In some cases we can check the version of the openssl
+    # In some cases check the version of the openssl
     if [ $(openssl version -v | grep -o -e "[0-9]\.[0-9]\.[0-9]"| grep -o -e "^[0-9]" | uniq) -lt "3" ]; then
         echo "ERROR: OpenSSL version 3 or higher is needed."
         exit 1
