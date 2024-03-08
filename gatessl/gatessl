@@ -58,6 +58,17 @@ function check_from_stdin() {
     fi
 }
 
+function check_dos_format() {
+    
+
+    if read -r FIRST_LINE; echo $FIRST_LINE | od -a | grep -o -e "cr.*nl" >/dev/null; then
+        echo "ERROR: Seems like CRLF format. Convert it to Unix with dos2unix"
+        exit 1
+    fi
+}
+
+check_dos_format
+
 # Function call
 checkssl
 
