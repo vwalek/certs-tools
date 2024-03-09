@@ -7,7 +7,7 @@ The `gatessl` command is a bash wrapper around `openssl` to list multiple certif
 Pull just the file into you `/.local/bin` directory.
 
 ~~~
-# curl -o ~/.local/bin/gatessl https://raw.githubusercontent.com/vwalek/certs-tools/main/gatessl/gatessl
+# curl -o ~/.local/bin/gatessl https://raw.githubusercontent.com/vwalek/certs-tools/v0.0.1/gatessl/gatessl
 
 # chmod +x ~/.local/bin/gatessl
 ~~~
