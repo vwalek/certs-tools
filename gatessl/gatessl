@@ -44,7 +44,7 @@ function checkssl() {
     fi
 
     # In some cases check the version of the openssl
-    if [ $(openssl version -v | grep -o -e "[0-9]\.[0-9]\.[0-9]"| grep -o -e "^[0-9]" | uniq) -lt "3" ]; then
+    if [ "$(openssl version -v | grep -o -e "[0-9]\.[0-9]\.[0-9]"| grep -o -e "^[0-9]" | uniq)" -lt "3" ]; then
         echo "ERROR: OpenSSL version 3 or higher is needed."
         exit 1
     fi
@@ -67,7 +67,7 @@ check_from_stdin
 options=" -noout" 
 
 if [[ "${1}" == "" ]]; then
-    options=" -noout -text"
+    options=' -noout -text'
 fi
 
 while [[ "${1}" = -?* ]]; do
@@ -112,8 +112,9 @@ one_cert=""
 # the IFS is field separator set to end of the line
 while IFS=$'\n' read -r line; do
 
-  line=$(echo ${line} | sed 's/^[[:space:]]*//')
-
+  # ignore shellcheck:SC2001 
+  line=$(echo "${line}" | sed 's/^[[:space:]]*//')
+  
   if [[ $helper == "1" ]]; then
     lines+=( "${line}" )
   fi
@@ -124,14 +125,14 @@ while IFS=$'\n' read -r line; do
     continue
   fi
 
-  if [[ $line == "-----END CERTIFICATE-----" ]]; then
+  if [[ "${line}" == "-----END CERTIFICATE-----" ]]; then
     helper=0
     	  
     for each in "${lines[@]}"; do
       one_cert+="${each}\n"
     done
     
-    echo -e ${one_cert} | openssl x509 ${options}
+    echo -e "${one_cert}" | openssl x509 ${options}
 
     lines=()
     one_cert=""
